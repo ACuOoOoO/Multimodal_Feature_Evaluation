@@ -10,7 +10,7 @@ The information of data collected in our benchmark is summerized in the table be
 |---------|-----------------------------------|:-------:|:--------:|:-------:|:--------------------------:|-----------|
 | VIS-NIR | Visible& Near infrared            |   3\1   |  345\211 | 983x686 | Multiple scenes            | [1]       |
 | VIS-IR  | Visible& Long-wave infrared       |   3\1   |  211\47  | 533x321 | Road video at night        | [2,3]     |
-| VIS-SAR | Visible& Synthetic aperture radar |   1\1   | 2011\424 | 512x512 | Remote sensed by statilite | [4]       |
+| VIS-SAR | Visible& Synthetic aperture radar |   1\1   | 2011\424 | 512x512 | Remotely sensed by statilite | [4]       |
 
 [1] Matthew Brown and Sabine Süsstrunk. Multi-spectral sift for scene category recognition. In Proc. IEEE Conf. Comput. Vis. Pattern Recognit., pages 177–184, 2011.
 
