@@ -8,7 +8,7 @@ This is a benchmark for multimodal feature evaluation introduced in the paper ["
 The information of data collected in our benchmark is summerized in the table below, in which "channel" denotes the number of channels of visible\ the other type image, "number" denotes the number of image pairs in train\test split.  
 |         | Image type                        | Channel |  Number  |   Size  |          Character         | Reference |
 |---------|-----------------------------------|:-------:|:--------:|:-------:|:--------------------------:|-----------|
-| VIS-NIR | Visible& Near infrared            |   3\1   |  345\211 | 983x686 | Multiple scenes            | [1]       |
+| VIS-NIR | Visible& Near infrared            |   3\1   |  345\128 | 983x686 | Multiple scenes            | [1]       |
 | VIS-IR  | Visible& Long-wave infrared       |   3\1   |  211\47  | 533x321 | Road video at night        | [2,3]     |
 | VIS-SAR | Visible& Synthetic aperture radar |   1\1   | 2011\424 | 512x512 | Remotely sensed by statilite | [4]       |
 
