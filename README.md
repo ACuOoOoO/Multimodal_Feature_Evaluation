@@ -1,12 +1,12 @@
 # Multimodal Feature Evaluation Benchmark
 
 
-This is a benchmark for multimodal feature evaluation introduced in the paper ["RedFeat: Recoupling detection and description for multimodal feature learning"](https://arxiv.org/abs/2205.07439). The benchmark consists of three datasets, including VIS-NIR, VIS-IR and VIS-SAR.
+This is a benchmark for multimodal feature evaluation, which is introduced in the paper ["RedFeat: Recoupling detection and description for multimodal feature learning"](https://arxiv.org/abs/2205.07439). The benchmark consists of three datasets, including VIS-NIR, VIS-IR and VIS-SAR.
 
 
 ## Subsets
-The information of data collected in our benchmark is summerized in the table below, in which "channel" denotes the number of channels of visible\ the other type image, "number" denotes the number of image pairs in train\test split.  
-|         | Image type                        | Channel |  Number  |   Size  |          Character         | Reference |
+The information of data collected in our benchmark is summerized in the table below, in which "channel" denotes the number of channels of visible\ the other type image, "number" denotes the number of image pairs in the train\test split.  
+|         | Image type                        | Channel |  Number  |   Size  |          Characteristic         | Reference |
 |---------|-----------------------------------|:-------:|:--------:|:-------:|:--------------------------:|-----------|
 | VIS-NIR | Visible& Near infrared            |   3\1   |  345\128 | 983x686 | Multiple scenes            | [1]       |
 | VIS-IR  | Visible& Long-wave infrared       |   3\1   |  211\47  | 533x321 | Road video at night        | [2,3]     |
