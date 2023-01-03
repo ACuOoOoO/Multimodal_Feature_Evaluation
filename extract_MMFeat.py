@@ -112,8 +112,8 @@ def extract_multiscale( net, img, detector, image_type,
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("Extract keypoints for a given image")
-    parser.add_argument("--subsets", type=str, default='VIS_NIR', help='number of keypoints')
-    parser.add_argument("--num_features", type=int, default=4096, help='number of keypoints')
+    parser.add_argument("--subsets", type=str, default='VIS_NIR', help='VIS_IR, VIS_NIR, VIS_SAR')
+    parser.add_argument("--num_features", type=int, default=4096, help='Number of features')
     parser.add_argument("--model", type=str, default='/data1/ACuO/MMFeat-master/Pretrained/VIS_NIR.pth', help='model path')
 
     parser.add_argument("--scale-f", type=float, default=2**0.25)
