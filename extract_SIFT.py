@@ -3,9 +3,10 @@ import torch
 import os 
 import cv2
 import numpy as np
+import sys
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 from extract_patches.core import extract_patches
-import torchvision.transforms as transforms
-import torch.nn.functional as F
 import torch.nn as nn
 import scipy.io as scio
 from copy import deepcopy
@@ -79,13 +80,13 @@ if __name__ == '__main__':
         args.subsets = [args.subsets]
     feature_name = 'SIFT'
     sift = cv2.xfeatures2d.SIFT_create(contrastThreshold=args.contrastThreshold, edgeThreshold=args.edgeThreshold)
-    if not os.path.exists('features'):
-        os.mkdir('features')
-    if not os.path.exists('features/'+feature_name):
-        os.mkdir('features/'+feature_name)
+    if not os.path.exists(os.path.join(SCRIPT_DIR,'features')):
+        os.mkdir(os.path.join(SCRIPT_DIR,'features'))
     for subset in args.subsets:
-        if not os.path.exists(os.path.join('features',feature_name,subset)):
-            os.mkdir(os.path.join('features',feature_name,subset))
+        if not os.path.exists(os.path.join(SCRIPT_DIR,'features',args.subsets[0])):
+            os.mkdir(os.path.join(SCRIPT_DIR,'features',args.subsets[0]))
+        if not os.path.exists(os.path.join(SCRIPT_DIR,'features',args.subsets[0],feature_name)):
+            os.mkdir(os.path.join(SCRIPT_DIR,'features',args.subsets[0],feature_name))
         type1 = subset.split('_')[0]
         type2 = subset.split('_')[1]
         imgs = os.listdir(os.path.join(subset,'test',type1))
