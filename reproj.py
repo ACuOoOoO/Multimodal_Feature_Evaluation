@@ -21,9 +21,9 @@ def checkboard(im1,im2,d=150):
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--feature_name", type=str, default='MMFeat')
-parser.add_argument("--subsets", type=str, default='VIS_NIR')
-parser.add_argument("--nums_kp", type=int, default=-1)
+parser.add_argument("--feature_name", type=str, default='ReDFeat',help='Name of feature')
+parser.add_argument("--subsets", type=str, default='VIS_SAR',help='Type of modal: VIS_NIR, VIS_IR, VIS_SAR, '+' for all')
+parser.add_argument("--nums_kp", type=int, default=-1, help="Number of feature for evluation")
 args = parser.parse_args() 
 
 
