@@ -1,7 +1,7 @@
 # Multimodal Feature Evaluation Benchmark
 
 
-This is a benchmark for multimodal feature evaluation, which is introduced in the paper ["RedFeat: Recoupling detection and description for multimodal feature learning"](https://arxiv.org/abs/2205.07439). The benchmark consists of three datasets, including VIS-NIR, VIS-IR and VIS-SAR.
+This is a benchmark for multimodal feature evaluation, which is introduced in the paper ["RedFeat: Recoupling detection and description for multimodal feature learning"](https://ieeexplore.ieee.org/abstract/document/9999700). The benchmark consists of three datasets, including VIS-NIR, VIS-IR and VIS-SAR.
 
 
 ## Subsets
