@@ -16,12 +16,11 @@ import argparse
 blacklist_NIR = ['89.png', '87.png', '105.png', '129.png']
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--feature_name", type=str, default='ReDFeat',help='Name of feature')
-parser.add_argument("--subsets", type=str, default='VIS_SAR',help='Type of modal: VIS_NIR, VIS_IR, VIS_SAR, '+' for all')
+parser.add_argument("--feature_name", type=str, default='SIFT',help='Name of feature')
+parser.add_argument("--subsets", type=str, default='VIS_NIR',help="Type of modal: VIS_NIR, VIS_IR, VIS_SAR, '+' for all")
 parser.add_argument("--nums_kp", type=int, default=-1, help="Number of feature for evluation")
-parser.add_argument("--vis_flag", type=bool, default=True. help="Visualization flag")
+parser.add_argument("--vis_flag", type=bool, default=True,help="Visualization flag")
 args = parser.parse_args() 
-
 
 import argparse
 bf = cv2.BFMatcher(crossCheck=True)
@@ -40,6 +39,7 @@ else:
     nums_kp = [args.nums_kp]
 feature_name = args.feature_name
 vis_flag = args.vis_flag
+
 for subset in subsets:
     subset_path = os.path.join(SCRIPT_DIR,subset)
     dirlist = os.listdir(subset_path)
@@ -50,7 +50,6 @@ for subset in subsets:
     print(subset)
     filepath1 = os.path.join(subset_path,'test',subset.split('_')[0])
     filepath2 = os.path.join(subset_path,'test',subset.split('_')[1])
-
     for num in [1024,2048,4096]:
     # for num in [2048]:
         N_k1 = []
@@ -58,6 +57,10 @@ for subset in subsets:
         N_corr = []
         N_corretmatches = []
         N_in_corretmatches = []
+        N_k1_ol = []
+        N_k2_ol = []
+        N_corr_thres = []
+        N_corretmatches_thres = []
         image_list = sorted(os.listdir(filepath1))
         img_list_whitelist = []
         progress_bar = tqdm(range(len(image_list)))
@@ -80,102 +83,105 @@ for subset in subsets:
             try:
                 suffix = '.12'
                 H = scio.loadmat(os.path.join(subset_path,'test','transforms')+'/'+image_list[id].replace('.png',suffix+'.mat'))['H']
+                ones = np.ones_like(image1)
+                mask = cv2.warpPerspective(ones,H,[ones.shape[1],ones.shape[0]])
+                mask_1 = mask>0.5
+                mask_1 = mask_1*1.0
+                mask = cv2.warpPerspective(mask_1,np.linalg.inv(H),[mask.shape[1],mask.shape[0]])
+                mask_2 = mask>0.5
                 ones = np.ones([np.size(kp2,0),1])
-                kp_ir_warped = np.hstack([kp2,ones])
-                kp_ir_warped = H @ kp_ir_warped.transpose()
-                kp_ir_warped = kp_ir_warped/kp_ir_warped[2,:]
-                kp_ir_warped = kp_ir_warped[0:2,:].transpose()
-                kp_vis_warped = kp1
+                kp_2_warped = np.hstack([kp2,ones])
+                kp_2_warped = H @ kp_2_warped.transpose()
+                kp_2_warped = kp_2_warped/kp_2_warped[2,:]
+                kp_2_warped = kp_2_warped[0:2,:].transpose()
+                kp_1_warped = kp1
             except:
                 suffix = '.21'
                 H = scio.loadmat(os.path.join(subset_path,'test','transforms')+'/'+image_list[id].replace('.png',suffix+'.mat'))['H']
+                ones = np.ones_like(image1)
+                mask = cv2.warpPerspective(ones,H,[ones.shape[1],ones.shape[0]])
+                mask_2 = mask>0.5
+                mask_2 = mask_2*1.0
+                mask = cv2.warpPerspective(mask_2,np.linalg.inv(H),[mask.shape[1],mask.shape[0]])
+                mask_1 = mask>0.5
                 ones = np.ones([np.size(kp1,0),1])
-                kp_vis_warped = np.hstack([kp1,ones])
-                kp_vis_warped = H @ kp_vis_warped.transpose()
-                kp_vis_warped = kp_vis_warped/kp_vis_warped[2,:]
-                kp_vis_warped = kp_vis_warped[0:2,:].transpose()
-                kp_ir_warped = kp2
-
-            
-
+                kp_1_warped = np.hstack([kp1,ones])
+                kp_1_warped = H @ kp_1_warped.transpose()
+                kp_1_warped = kp_1_warped/kp_1_warped[2,:]
+                kp_1_warped = kp_1_warped[0:2,:].transpose()
+                kp_2_warped = kp2
             N_k1.append(kp1[0:num].shape[0])
             N_k2.append(kp2[0:num].shape[0])
-            
-            #################################
-        
-            keypoints1_=torch.FloatTensor(kp_vis_warped)[0:num][:,:2]
-            keypoints2_=torch.FloatTensor(kp_ir_warped)[0:num][:,:2]
-            x_1 = keypoints1_[:,0]
-            y_1 = keypoints1_[:,1]
-            x_2 = keypoints2_[:,0]
-            y_2 = keypoints2_[:,1]
-            x_dist = (x_1.unsqueeze(1)-x_2.unsqueeze(0)).pow(2)
-            y_dist = (y_1.unsqueeze(1)-y_2.unsqueeze(0)).pow(2)
-            dist_k = x_dist + y_dist
-            n_corr = ((dist_k<=9).float().sum(dim=1)>0.9).float().sum()
-            N_corr.append(n_corr.cpu().item())
-            #################################
-            
 
+            overlap1 = 0
+            for kp in kp1[0:num]:
+                x = int(kp[0]+0.5)
+                y = int(kp[1]+0.5)
+                if mask_1[(y,x)].sum(axis=-1) > 0.5:
+                    overlap1 += 1
+            N_k1_ol.append(overlap1)
+
+            overlap2 = 0
+            for kp in kp2[0:num]:
+                x = int(kp[0]+0.5)
+                y = int(kp[1]+0.5)
+                if mask_2[((y,x))].sum(axis=-1) > 0.5:
+                    overlap2 += 1
+            N_k2_ol.append(overlap2)
             
-            # Mutual nearest neighbors matching
-            # In [6]:
+            kp_1_warped_  = kp_1_warped[0:num][:,:2].reshape(-1,1,2)
+            kp_2_warped_ = kp_2_warped[0:num][:,:2].reshape(1,-1,2)
+            dist_k = ((kp_1_warped_ - kp_2_warped_)**2).sum(axis=2)
+            
             matches = match_descriptors(desc1[0:num], desc2[0:num], cross_check=True)
-            # In [7]:
-            # print('Number of raw matches: %d.' % matches.shape[0])
-            # Number of raw matches: 296.
-            # Homography fitting
-            # In [8]:
-            keypoints_left = kp_vis_warped[0:num][matches[:, 0], : 2]
+            keypoints_left = kp_1_warped[0:num][matches[:, 0], : 2]
             keypoints_left_raw = kp1[0:num][matches[:, 0], : 2]
-            keypoints_right = kp_ir_warped[0:num][matches[:, 1], : 2]
+            keypoints_right = kp_2_warped[0:num][matches[:, 1], : 2]
             keypoints_right_raw = kp2[0:num][matches[:, 1], : 2]
             
             dif = (keypoints_left - keypoints_right)
             dist_m = dif[:, 0]**2 + dif[:, 1]**2
-            inds = dist_m<=9
-            #print(inds.sum())
-            N_corretmatches.append(inds.sum())
-            
-            if vis_flag:
-                keypoints_right_raw_inlier = keypoints_right_raw[inds]
-                keypoints_left_raw_inlier = keypoints_left_raw[inds]
+            for thres in range(1,11):
+                #################################
+                n_corr = ((dist_k<=thres**2).sum(axis=1)>0.9).sum()
+                N_corr_thres.append(n_corr.item())
+                if thres==3:
+                    N_corr.append(n_corr.item())
+                #################################
                 
-                inlier_keypoints_left = [cv2.KeyPoint(point[0], point[1], 1) for point in keypoints_left_raw_inlier]
-                inlier_keypoints_right = [cv2.KeyPoint(point[0], point[1], 1) for point in keypoints_right_raw_inlier]
-                placeholder_matches = [cv2.DMatch(idx, idx, 1) for idx in range(inds.sum())]
-                image3 = cv2.drawMatches(image1, inlier_keypoints_left, image2, inlier_keypoints_right, placeholder_matches, None)
-                if not os.path.exists(os.path.join(SCRIPT_DIR,'results')):
-                    os.mkdir(os.path.join(SCRIPT_DIR,'results'))
-                if not os.path.exists(os.path.join(SCRIPT_DIR,'results',subset)):
-                    os.mkdir(os.path.join(SCRIPT_DIR,'results',subset))
-                if not os.path.exists(os.path.join(SCRIPT_DIR,'results',subset,feature_name)):
-                    os.mkdir(os.path.join(SCRIPT_DIR,'results',subset,feature_name))
-                if not os.path.exists(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match')):
-                    os.mkdir(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match'))
-                if not os.path.exists(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match',str(num))):
-                    os.mkdir(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match',str(num)))
-                #print(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match',str(num))+'/'+image_list[id].replace('_rgb.tiff','.png'))
-                cv2.imwrite(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match',str(num))+'/'+image_list[id].replace('_rgb.tiff','.png'),cv2.cvtColor(image3, cv2.COLOR_RGB2BGR))
-            np.random.seed(0)
-            progress_bar.set_postfix(Image_id = id)
-
+                inds = dist_m<=thres**2
+                #print(inds.sum())
+                N_corretmatches_thres.append(inds.sum())
+                if thres==3:
+                    N_corretmatches.append(inds.sum())
+        N_corr_thres = np.array(N_corr_thres)
         N_corr = np.array(N_corr)*1.0
         N_k1 = np.array(N_k1)*1.0
         N_k2 = np.array(N_k2)*1.0
+        N_k1_ol = np.array(N_k1_ol)
+        N_k2_ol = np.array(N_k2_ol)
         N_corretmatches = np.array(N_corretmatches)*1.0
+        N_corretmatches_thres = np.array(N_corretmatches_thres)
         #N_in_corretmatches = np.array(N_in_corretmatches)
-        rep_rate = N_corr*1.0/np.array([N_k1,N_k2]).min(axis=0)
-        mat_rate = N_corretmatches*1.0/N_corr
+        RR = N_corr*1.0/np.array([N_k1,N_k2]).min(axis=0)
+        mask_zero = N_k1_ol<0.1
+        N_k1_ol_temp = N_k1_ol
+        N_k1_ol_temp[mask_zero]=1
+        mask_zero = N_k2_ol<0.1
+        N_k2_ol_temp = N_k2_ol
+        N_k2_ol_temp[mask_zero]=1
+        MS = (N_corretmatches*1.0/N_k1_ol+N_corretmatches*1.0/N_k2_ol)/2
         from scipy.io import savemat
-        savemat(os.path.join(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match_result_{}.mat'.format(num))),{'imgs':img_list_whitelist,'N_corr':N_corr,'N_k1':N_k1,'N_k2':N_k2,'N_correctmatches':N_corretmatches})
+        savemat(os.path.join(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match_result_{}.mat'.format(num))),{'N_corr':N_corr,'N_k1':N_k1,'N_k2':N_k2,'N_correctmatches':N_corretmatches,
+                                                                                'N_k1_ol':N_k1_ol,'N_k2_ol':N_k2_ol,'N_correctmatches_thres':N_corretmatches_thres,
+                                                                                'N_corr_thres':N_corr_thres})
         print('Number of infrared keypoints: %f.' % np.mean(N_k1))
         print('Number of visible keypoints: %f.' % np.mean(N_k2))
         print('Number of correspondence: %f.' % N_corr.mean())
         print('Number of correct matches: %f.' % np.mean(N_corretmatches))
         #print('Number of inlier correct matches: %d.' % np.mean(N_in_corretmatches))
-        print('repeated rate: {}.'.format(rep_rate.mean()))
-        print('matched rate: {}.'.format(mat_rate.mean()))
+        print('RR: {}.'.format(RR.mean()))
+        print('MS: {}.'.format(MS.mean()))
 
         log_file_path = os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match_log.txt')
         if os.path.exists(log_file_path):
@@ -186,6 +192,6 @@ for subset in subsets:
         log_file.write('Number of correspondence: %f.\n' % N_corr.mean())
         log_file.write('Number of correct matches: %f.\n' % np.mean(N_corretmatches))
         #log_file.write('Number of inlier correct matches: %d.\n' % np.mean(N_in_corretmatches))
-        log_file.write('repeated rate: {}.\n'.format(rep_rate.mean()))
-        log_file.write('matched rate: {}.\n'.format(mat_rate.mean()))
+        log_file.write('RR: {}.\n'.format(RR.mean()))
+        log_file.write('MS: {}.\n'.format(MS.mean()))
         log_file.close()
