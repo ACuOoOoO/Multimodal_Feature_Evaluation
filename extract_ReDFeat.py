@@ -130,7 +130,7 @@ if __name__ == '__main__':
     parser.add_argument("--min-scale", type=float, default=0)
     parser.add_argument("--max-scale", type=float, default=1)
     parser.add_argument("--border", type=float, default=5) 
-    parser.add_argument("--repeatability-thr", type=float, default=0.1)
+    parser.add_argument("--repeatability-thr", type=float, default=0.01)
 
     parser.add_argument("--gpu", type=int, default=0, help='use -1 for CPU')
 
