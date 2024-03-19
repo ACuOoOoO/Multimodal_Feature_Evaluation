@@ -20,6 +20,8 @@ np.random.seed(1)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
+AP = nn.AvgPool2d(9,stride=1,padding=4).cuda()
+MP = nn.AvgPool2d(9,stride=1,padding=4).cuda()
 
     
 def load_network(model_fn): 
@@ -31,7 +33,7 @@ def load_network(model_fn):
 
 
 class NonMaxSuppression(torch.nn.Module):
-    def __init__(self, rel_thr=0.7, rep_thr=0.6):
+    def __init__(self, rep_thr=0.6):
         super(NonMaxSuppression,self).__init__()
         self.max_filter = torch.nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
         self.rep_thr = rep_thr
@@ -72,15 +74,21 @@ def extract_multiscale( net, img, detector, image_type,
             nh, nw = img.shape[2:]
             if verbose: print(f"extracting at scale x{s:.02f} = {nw:4d}x{nh:3d}")
 
+            mask_extra = (MP((img>1e-12).sum(dim=1,keepdim=True).float())>1e-5).float()
+            for ii in range(3):
+                mask_extra = (AP(mask_extra)>0.99).float()
+
+            img_t = (img-img.mean(dim=[-1,-2],keepdim=True))/img.std(dim=[-1,-2],keepdim=True)
+
             with torch.no_grad():
                 if image_type == '1':
-                    descriptors, repeatability = net.forward1(img)
+                    descriptors, repeatability = net.forward1(img_t)
                 elif image_type == '2':
-                    descriptors, repeatability = net.forward2(img)
+                    descriptors, repeatability = net.forward2(img_t)
 
             mask = repeatability*0
             mask[:,:,args.border:-args.border,args.border:-args.border] = 1
-            repeatability=repeatability*mask
+            repeatability=repeatability*mask*mask_extra
             y,x = detector(repeatability) # nms
             q = repeatability[0,0,y,x]
             d = descriptors[0,:,y,x].t()
@@ -112,18 +120,17 @@ def extract_multiscale( net, img, detector, image_type,
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("Extract keypoints for a given image")
-    parser.add_argument("--subsets", type=str, default='VIS_NIR', help='VIS_IR, VIS_NIR, VIS_SAR')
+    parser.add_argument("--subsets", type=str, default='VIS_IR', help='VIS_IR, VIS_NIR, VIS_SAR')
     parser.add_argument("--num_features", type=int, default=4096, help='Number of features')
-    parser.add_argument("--model", type=str, default='/data1/ACuO/MMFeat-master/Pretrained/VIS_NIR.pth', help='model path')
+    parser.add_argument("--model", type=str, default='/data1/ACuO/ReDFeat/Pretrained/VIS_IR.pth', help='model path')
 
-    parser.add_argument("--scale-f", type=float, default=2**0.25)
+    parser.add_argument("--scale-f", type=float, default=2**1)
     parser.add_argument("--min-size", type=int, default=256)
     parser.add_argument("--max-size", type=int, default=1000)
     parser.add_argument("--min-scale", type=float, default=0)
     parser.add_argument("--max-scale", type=float, default=1)
     parser.add_argument("--border", type=float, default=5) 
-    parser.add_argument("--reliability-thr", type=float, default=0.5)
-    parser.add_argument("--repeatability-thr", type=float, default=0.4)
+    parser.add_argument("--repeatability-thr", type=float, default=0.1)
 
     parser.add_argument("--gpu", type=int, default=0, help='use -1 for CPU')
 
@@ -139,7 +146,6 @@ if __name__ == '__main__':
     net = net.cuda()
     # create the non-maxima detector
     detector = NonMaxSuppression(
-        rel_thr = args.reliability_thr, 
         rep_thr = args.repeatability_thr)
     if not os.path.exists(os.path.join(SCRIPT_DIR,'features')):
         os.mkdir(os.path.join(SCRIPT_DIR,'features'))
@@ -166,7 +172,7 @@ if __name__ == '__main__':
                 img = Image.open(img).convert('RGB')
                 W, H = img.size
                 img = TF.to_tensor(img).unsqueeze(0)
-                img = (img-img.mean(dim=[-1,-2],keepdim=True))/img.std(dim=[-1,-2],keepdim=True)
+                #img = (img-img.mean(dim=[-1,-2],keepdim=True))/img.std(dim=[-1,-2],keepdim=True)
                 img = img.cuda()
                 # extract keypoints/descriptors for a single image
                 xys, desc, scores = extract_multiscale(net, img, detector, '1',
@@ -188,7 +194,7 @@ if __name__ == '__main__':
                 img = Image.open(img).convert('RGB')
                 W, H = img.size
                 img = TF.to_tensor(img).unsqueeze(0)
-                img = (img-img.mean(dim=[-1,-2],keepdim=True))/img.std(dim=[-1,-2],keepdim=True)
+                #img = (img-img.mean(dim=[-1,-2],keepdim=True))/img.std(dim=[-1,-2],keepdim=True)
                 img = img.cuda()
                 
                 # extract keypoints/descriptors for a single image

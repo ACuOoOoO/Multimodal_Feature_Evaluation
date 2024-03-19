@@ -2,7 +2,7 @@ import sys
 import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
-
+from scipy.io import savemat
 import numpy as np
 import cv2
 import os
@@ -171,7 +171,8 @@ for subset in subsets:
         N_k2_ol_temp = N_k2_ol
         N_k2_ol_temp[mask_zero]=1
         MS = (N_corretmatches*1.0/N_k1_ol+N_corretmatches*1.0/N_k2_ol)/2
-        from scipy.io import savemat
+        if not os.path.exists(os.path.join(SCRIPT_DIR,'results',subset,feature_name)):
+            os.makedirs(os.path.join(SCRIPT_DIR,'results',subset,feature_name))
         savemat(os.path.join(os.path.join(SCRIPT_DIR,'results',subset,feature_name,'match_result_{}.mat'.format(num))),{'N_corr':N_corr,'N_k1':N_k1,'N_k2':N_k2,'N_correctmatches':N_corretmatches,
                                                                                 'N_k1_ol':N_k1_ol,'N_k2_ol':N_k2_ol,'N_correctmatches_thres':N_corretmatches_thres,
                                                                                 'N_corr_thres':N_corr_thres})
